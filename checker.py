@@ -1,5 +1,3 @@
-import csv
-from re import L
 from bs4 import BeautifulSoup as bs
 import os.path as path
 
