@@ -1,17 +1,19 @@
 from bs4 import BeautifulSoup as bs
 import os.path as path
+import urllib.request
+import json
+import requests
 
 def main():
-  csv = loadCSV(path.join(path.dirname(__file__), 'MVO-Liste.CSV'))
-  # TODO: Iterate csv lines for countryName and productName
-  # TODO: Set countryName and productName for each line of csv
-  countryName = ""
-  productName = ""
-  countryId = getCountryId(countryName)
-  productId = getProductId(productName)
+  csv = loadCSV(path.join(path.dirname(__file__), 'input.csv'))
+  for line in csv:
+    countryName, productName = line.split(';')
+    productId = getProductId(productName)
+    countryId = getCountryId(countryName)
 
-  report = getReport(countryId, productId)
-  data = parseReport(report)
+    report = getReport(countryId, productId)
+    data = parseReport(report)
+
   saveReport(data, path.join(path.dirname(__file__), 'output.csv'))
 
 
@@ -25,7 +27,8 @@ def loadCSV(path):
       str: Csv file content.
   """
   csv = None
-  # TODO: Implement
+  file = open(path)
+  csv = file.readlines()
   return csv
 
 
@@ -43,7 +46,18 @@ def getProductId(productName, language="en"):
       int: The interneal id of the product.
   """
   id = None
-  # TODO: Implement
+  url = "https://www.mvorisicochecker.nl/{}/api/products/{}?hideFirstLevel=true".format(language, productName.replace(' ', '%20'))
+  content = urllib.request.urlopen(url).read()
+  contentJson = json.loads(content)
+  products = contentJson["products"]
+  if (len(products) > 0) :
+    children = products[0]["children"]
+    if (len(children) > 0):
+      firstChild = children[0]
+      id = int(firstChild["id"])
+      print("found id", id)
+      return id
+
   return id
 
 
@@ -61,7 +75,18 @@ def getCountryId(countryName, language="en"):
       int: The interneal id of the country.
   """
   id = None
-  # TODO: Implement
+  url = "https://www.mvorisicochecker.nl/{}/api/countries/{}?hideFirstLevel=true".format(language, countryName.replace(' ', '%20'))
+
+  content = urllib.request.urlopen(url).read()
+  contentJson = json.loads(content)
+
+  countries = contentJson["countries"]
+  if (len(countries) > 0) :
+    firstCountry = countries[0]
+    id = int(firstCountry["id"])
+    print("found id", id)
+    return id
+
   return id
 
 
@@ -87,7 +112,9 @@ def getReport(productId, countryId, language="en"):
   """
   report = None
   print("Retrieving report for product {} and country {}...".format(productId, countryId))
-  # TODO: Implement
+  url = "https://www.mvorisicochecker.nl/{}/ajax/generate-report".format(language)
+  
+
   return report
 
 def parseReport(report):
